@@ -25,3 +25,5 @@ Run tests with `nix flake test --all-systems --impure --print-build-logs`.
 You have to `git add` new files before using any nix commands.
 
 Always read documentation or source code to find information.
+
+You can read documentation in docs/. Write like a human and avoid complex language. Don't document implementation details. Add more documentation whenever you find new information. You can create new files in docs/ if you want.
