@@ -1,0 +1,35 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "schedule": ["* 6-23 * * 1"],
+  "prConcurrentLimit": 5,
+  "semanticCommits": "disabled",
+  "commitMessagePrefix": "deps:",
+  "minimumReleaseAge": "7 days",
+  "nix": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "matchManagers": ["cargo"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "rust crates"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "GitHub Actions",
+      "automerge": true
+    },
+    {
+      "matchManagers": ["nix"],
+      "groupName": "flake inputs",
+      "commitMessageTopic": "update flake input {{depName}}",
+      "minimumReleaseAge": null,
+      "automerge": true
+    }
+  ]
+}
