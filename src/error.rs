@@ -30,4 +30,14 @@ pub enum Error {
     IgpuMaxFreqOpen,
     #[error("could not write igpu max frequency")]
     IgpuMaxFreqWrite,
+    #[error("no intel powerclamp device found")]
+    NoIntelPowerclamp,
+    #[error("could not read cooling devices")]
+    FindCoolingDevice,
+    #[error("could not read intel_powerclamp module parameter")]
+    IntelPowerclampSysfsRead,
+    #[error("could not open intel powerclamp device")]
+    IdleCpuOpen(#[source] io::Error),
+    #[error("could not write idle cpu time")]
+    IdleCpuWrite(#[source] io::Error),
 }

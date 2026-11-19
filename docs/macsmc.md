@@ -123,6 +123,25 @@ for every zone:
 The ladders have to be described back to the SMC, see [step counts](step-counts.md). How to
 turn the iGPU step into a clock is in [iGPU power limits](igpu-power-limits.md).
 
+Forced idle is the one limit that does not move a clock. It says what share of CPU time has to
+be idle: the step leaves the CPU `100 - step` percent of the time to run and holds the cores in
+a C-state for the rest, so it caps average CPU power without touching frequency or voltage.
+macOS does this in XCPM and never goes below 30 % run time, which is a floor of 70 % idle.
+
+There is one idle step for the machine and no step per core. `intel_powerclamp` takes the same
+percentage in its single `cur_state`, and one timer wakes an injection thread on every target
+core, so they all get the same duty cycle. Which cores are targets is a mask, the `cpumask`
+module parameter, and by default it is every logical CPU, both siblings of a hyperthread
+included. The mask only changes while injection is off, so it is not something a daemon can
+adjust as it goes.
+
+The depth is capped by the mask as much as by the driver. A `cur_state` above `max_idle - 1` is
+quietly clamped down, `max_idle` is 50 by default, and it accepts up to 100 only where the mask
+leaves some cores out, 75 where it covers every present CPU. `max_state` answers 100 and does
+not tell you the ceiling, `max_idle` does. The driver measures what it achieved through the
+package C-state counters, and only when the mask is every present CPU of a single package and
+die, so on a partial mask it injects without feedback.
+
 ## Reading sensors and limits: hwmon
 
 ```
