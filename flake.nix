@@ -93,5 +93,63 @@
           packages = [ ];
         };
       }
-    );
+    )
+    // {
+      nixosModules.macsmc-zonepower = { config, lib, pkgs, ... }: {
+        options.services.macsmc-zonepower = {
+          enable = lib.mkEnableOption "Enables macsmc-zonepower service";
+          package = lib.mkOption {
+            type = lib.types.package;
+            default = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
+          };
+        };
+        config =
+          let
+            cfg = config.services.macsmc-zonepower;
+          in
+          lib.mkIf cfg.enable {
+            systemd.services.macsmc-zonepower = {
+              description = "Apply SMC reported zone power limits";
+              documentation = [ "https://github.com/sharpenedblade/macsmc-zonepower" ];
+              wantedBy = [ "multi-user.target" ];
+              unitConfig = {
+                StartLimitIntervalSec = 120;
+                StartLimitBurst = 10;
+              };
+              serviceConfig = {
+                Type = "exec";
+                ExecStart = "${cfg.package}/bin/macsmc-zonepower";
+                Restart = "always";
+                RestartSec = "2s";
+                CapabilityBoundingSet = "";
+                AmbientCapabilities = "";
+                NoNewPrivileges = "yes";
+                SystemCallFilter = [ "@system-service" "~@aio @chown @io-event @ipc @keyring @memlock @network-io @resources @setuid @sync" ];
+                SystemCallErrorNumber = "EPERM";
+                SystemCallArchitectures = "native";
+                LockPersonality = "yes";
+                MemoryDenyWriteExecute = "yes";
+                RestrictNamespaces = "yes";
+                RestrictRealtime = "yes";
+                RestrictSUIDSGID = "yes";
+                PrivateTmp = "yes";
+                PrivateDevices = "yes";
+                PrivateNetwork = "yes";
+                DevicePolicy = "closed";
+                RestrictAddressFamilies = "none";
+                ProtectSystem = "strict";
+                ProtectHome = "yes";
+                ProtectProc = "invisible";
+                ProtectClock = "yes";
+                ProtectHostname = "yes";
+                ProtectKernelLogs = "yes";
+                ProtectKernelModules = "yes";
+                ProtectControlGroups = "yes";
+                KeyringMode = "private";
+                RemoveIPC = "yes";
+              };
+            };
+          };
+      };
+    };
 }
