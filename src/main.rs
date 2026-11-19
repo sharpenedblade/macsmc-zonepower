@@ -27,7 +27,7 @@ fn main() {
             plimits = new_plimts;
             apply_plimts(&plimits, &mut cpu_policies, &mut igpu, &mut idle_cpu).unwrap();
         }
-        sleep(time::Duration::from_millis(250));
+        sleep(time::Duration::from_millis(200));
     }
 }
 
