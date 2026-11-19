@@ -2,7 +2,15 @@ use crate::{
     cpu::CpuPolicy, error::Error, idle_cpu::CpuIdle, igpu::Igpu, smc_power_caps::SmcPowerCaps,
 };
 use nonempty::NonEmpty;
-use std::{thread::sleep, time};
+use signal_hook::consts::{SIGINT, SIGTERM};
+use std::{
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+    thread::sleep,
+    time,
+};
 
 mod cpu;
 mod error;
@@ -11,6 +19,9 @@ mod igpu;
 mod smc_power_caps;
 
 fn main() {
+    let cancellation_token = Arc::new(AtomicBool::new(false));
+    signal_hook::flag::register(SIGINT, cancellation_token.clone()).unwrap();
+    signal_hook::flag::register(SIGTERM, cancellation_token.clone()).unwrap();
     let mut plimits = SmcPowerCaps::read().unwrap();
     println!("Read initial SMC power limits");
     let mut cpu_policies = CpuPolicy::open_all().unwrap();
@@ -21,7 +32,7 @@ fn main() {
     println!("Found igpu device");
     apply_plimts(&plimits, &mut cpu_policies, &mut igpu, &mut idle_cpu).unwrap();
     println!("Applied initial power limits");
-    loop {
+    while !cancellation_token.load(Ordering::Relaxed) {
         let new_plimts = SmcPowerCaps::read().unwrap();
         if new_plimts != plimits {
             plimits = new_plimts;
@@ -29,6 +40,15 @@ fn main() {
         }
         sleep(time::Duration::from_millis(200));
     }
+    println!("Disabling power limits");
+    apply_plimts(
+        &SmcPowerCaps::disabled(),
+        &mut cpu_policies,
+        &mut igpu,
+        &mut idle_cpu,
+    )
+    .unwrap();
+    println!("Exited");
 }
 
 fn apply_plimts(

@@ -10,6 +10,9 @@ pub mod power_cap {
             // the most significant bit represents the hard limit flag
             PowerCap(n & !(1 << 7))
         }
+        pub fn disabled() -> Self {
+            PowerCap(0)
+        }
         #[inline(always)]
         pub fn as_u8(&self) -> u8 {
             self.0
@@ -47,6 +50,15 @@ impl SmcPowerCaps {
             idle: PowerCap::new(idle),
             ram: PowerCap::new(ram),
         })
+    }
+    pub fn disabled() -> Self {
+        Self {
+            idle: PowerCap::disabled(),
+            ram: PowerCap::disabled(),
+            igpu: PowerCap::disabled(),
+            cpu: PowerCap::disabled(),
+            dgpu: None,
+        }
     }
 }
 

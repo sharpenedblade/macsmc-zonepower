@@ -220,7 +220,8 @@ The ACPI backend does request an interrupt and does see event `0x80` when the li
 but that ends in a notifier chain inside the kernel and macsmc-hwmon does not listen to it.
 There is no event and no poll() support in user space, so a daemon has to re-read on a timer.
 Around 250 ms works. The KaiT2en `t2smc` driver is the one that wired the event through: its
-`smc_plimit_raw` file wakes readers, which is what a poll() on `plimit` would look like.
+`smc_plimit_raw` file wakes readers, which is what a poll() on `plimit` would look like. [The
+service](systemd-service.md) is what runs the polling daemon from boot.
 
 ## Where to look
 
