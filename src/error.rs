@@ -18,4 +18,16 @@ pub enum Error {
     CpuScalingLimitWrite(#[source] io::Error),
     #[error("no cpu frequency policies found")]
     NoCpufreqPolicies,
+    #[error("no intel igpu found")]
+    NoIgpu,
+    #[error("no intel igpu found")]
+    IgpuDeviceDirOpen,
+    #[error("could not get igpu frequency limits")]
+    IgpuLimitRead(#[source] io::Error),
+    #[error("could not parse igpu frequency limits")]
+    IgpuLimitParse,
+    #[error("could not open igpu max frequency")]
+    IgpuMaxFreqOpen,
+    #[error("could not write igpu max frequency")]
+    IgpuMaxFreqWrite,
 }
