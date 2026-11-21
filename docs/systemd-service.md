@@ -63,6 +63,12 @@ device policy, no network and no socket families at all, other people's processe
 no setuid or setgid files, a seccomp allow list of `@system-service` minus the groups the
 daemon never uses, native syscalls only, and `0077` as the umask.
 
+`@io-event` is the exception, it stays allowed even though the daemon has no event loop. The
+Rust runtime calls `poll()` before `main()` to check that file descriptors 0, 1 and 2 are
+open, and aborts on an error it does not expect. Blacklisting the group makes that probe fail
+with `EPERM`, and the daemon then dies at startup with an abort and a core dump without ever
+reaching its own code.
+
 The daemon exits if it cannot read or write any of those paths, and the unit restarts it. The
 restart rate is capped, so a machine that never grows the paths it needs ends up with the unit
 in `failed` instead of a daemon that spins.
