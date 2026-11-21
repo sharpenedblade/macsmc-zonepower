@@ -126,6 +126,26 @@ ioctl does not let you write it.
   machine the discrete GPU may be off or not bound at start, so look for it again every ten
   seconds or so rather than giving up.
 
+## What this daemon writes
+
+- It reads a key before it writes one. A key the machine does not have does not answer, and
+  nothing is written there.
+- It keeps a count the SMC already holds when it is between 1 and 127. Every machine in the
+  table holds a value of its own that looks right for that machine, and replacing it with a
+  computed one is usually a downgrade.
+- Counts are clamped to 1 to 127 on the way out.
+- The iGPU count is `(RP0 - RPn) / 50 + 1`. No dGPU count is written yet, because the daemon
+  does not cap a discrete GPU, and a count for a GPU nothing limits is a lie the SMC believes.
+- The CPU counts are the 100 MHz P-states of the ladder split at the base frequency. They come
+  from the first cpufreq policy: the policies of a machine share its frequency limits, so the
+  first one counts for all of them. A driver other than intel_pstate or amd_pstate publishes no
+  base frequency, and the ladder is then taken to have no turbo range. The `CPUFloor` of the
+  board plist is not applied: no derivation fits the dumps, and the machine's own value is the
+  better guess, see [the reference implementation](reference-implementation.md) for the one that
+  comes closest.
+- The counts are worked out once, before the first cap, and they go in again every ten seconds
+  without being measured again.
+
 ## What it changes
 
 t2-cruise measured the read only version of this on a MacBookPro16,1: with the steps applied

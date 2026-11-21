@@ -1,10 +1,10 @@
-use crate::{error::Error, smc_power_caps::power_cap::PowerCap};
+use crate::{error::Error, plimits::power_cap::PowerCap};
 use std::{fs::File, io::Write, path::Path};
 
 const DRM_CARD_GLOB: &str = "/sys/class/drm/card*";
 const INTEL_VENDOR_STRING: &str = "0x8086";
-/// One iGPU power limit step, in MHz
-const STEP_MHZ: u32 = 50;
+/// in MHz
+const STEP_SIZE: u32 = 50;
 
 pub struct Igpu {
     /// Maximum frequency in MHz
@@ -56,7 +56,7 @@ impl Igpu {
         })
     }
     pub fn cap_power(&mut self, plimit: PowerCap) -> Result<(), Error> {
-        let freq = (self.rp0_freq - plimit.as_u8() as u32 * STEP_MHZ)
+        let freq = (self.rp0_freq - plimit.as_u8() as u32 * STEP_SIZE)
             .max(self.rpn_freq)
             .to_string();
         self.max_freq
@@ -67,5 +67,8 @@ impl Igpu {
             .map_err(|_| Error::IgpuMaxFreqWrite)?;
 
         Ok(())
+    }
+    pub fn step_count(&self) -> u32 {
+        (self.rp0_freq - self.rpn_freq) / STEP_SIZE + 1
     }
 }
