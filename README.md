@@ -16,4 +16,5 @@ Daemon implementing the userspace side of smc power limits on t2 macs.
 ## Credits
 
 The algorithm and significant parts of the code were copied from or
-heavily influenced by https://github.com/kaiT2en/KaiT2en-Fedora/tree/main/apps/t2-zone-power
+heavily influenced by https://github.com/kaiT2en/KaiT2en-Fedora/tree/main/apps/t2-zone-power.
+See NOTICES.md for all copyright notices.
