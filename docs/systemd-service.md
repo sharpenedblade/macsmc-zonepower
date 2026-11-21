@@ -9,7 +9,8 @@ places.
 | `nixosModules.macsmc-zonepower` in `flake.nix` | NixOS |
 | `dist/macsmc-zonepower.service` | everything else |
 
-Both carry the same config, and `nix flake check` fails if they drift apart.
+Both carry the same sandbox config, and they have to be changed together: nothing checks that they
+match.
 
 ## NixOS
 
@@ -36,17 +37,24 @@ sudo systemctl enable --now macsmc-zonepower.service
 
 ## What the unit needs
 
-The unit only starts when the macsmc driver has registered its platform device, so it stays
-off on machines that have nothing to read limits from. What it reads and writes once it runs:
+The unit starts with the machine. A machine with nothing to read limits from has no daemon: it
+exits on the missing path, and the restart limit in `[Unit]` ends the unit in `failed` rather
+than letting a daemon spin. What it reads and writes once it runs:
 
-| Path                                                       | Access |
-| ---------------------------------------------------------- | ------ |
-| `/sys/bus/platform/devices/APP0001:00/plimit`              | read   |
-| `/sys/module/intel_powerclamp/parameters/max_idle`         | read   |
-| `/sys/devices/system/cpu/cpufreq/policy*/scaling_max_freq` | write  |
-| `/sys/class/drm/card*/gt_max_freq_mhz`                     | write  |
-| `/sys/class/drm/card*/gt_boost_freq_mhz`                   | write  |
-| `/sys/class/thermal/cooling_device*/cur_state`             | write  |
+| Path                                                       | Access      |
+| ---------------------------------------------------------- | ----------- |
+| `/sys/bus/platform/devices/APP0001:00/plimit`              | read        |
+| `/sys/module/intel_powerclamp/parameters/max_idle`         | read        |
+| `/sys/class/thermal/cooling_device*/type`                  | read        |
+| `/sys/devices/system/cpu/cpufreq/policy*/cpuinfo_*`        | read        |
+| `/sys/devices/system/cpu/cpufreq/policy*/base_frequency`   | read        |
+| `/sys/class/drm/card*/gt_RP0_freq_mhz`                     | read        |
+| `/sys/class/drm/card*/gt_RPn_freq_mhz`                     | read        |
+| `/sys/devices/system/cpu/cpufreq/policy*/scaling_max_freq` | write       |
+| `/sys/class/drm/card*/gt_max_freq_mhz`                     | write       |
+| `/sys/class/drm/card*/gt_boost_freq_mhz`                   | write       |
+| `/sys/class/thermal/cooling_device*/cur_state`             | write       |
+| `/dev/smc`                                                 | read, write |
 
 Those attributes are mode 0644 and owned by root, and the kernel lets the owner write them
 without any capability. So the daemon runs as root but with an empty
@@ -55,10 +63,19 @@ nothing that would need a capability, no modules, no network, no mounting, no cl
 `User=`, `DynamicUser=` and `PrivateUsers=` are off for the same reason that keeps it root, they
 would take away the ownership the writes depend on.
 
+`/dev/smc` is a device node, not a file, so it needs a second door: the device cgroup decides
+whether a process may reach a node at all. `PrivateDevices=yes` would hide every physical node
+and is therefore off, and the closed `DevicePolicy=` stays on with one `DeviceAllow=` line for
+`/dev/smc`, so the rest of the machine's device nodes are still unreachable. Turning off
+`PrivateDevices=` does not open raw I/O either: the seccomp allow list never had the `@raw-io`
+group in it, and it does not gain it here. The `ioctl` call itself is part of `@system-service`,
+so the filter needs nothing for the writes.
+
 `ProtectKernelTunables=` is the one hardening option that stays off, it would make all of
 `/sys` read only. `ProtectSystem=strict` still makes the rest of the file system read only and
-leaves `/sys` alone. Everything else is on: private `/tmp`, a private `/dev` with a closed
-device policy, no network and no socket families at all, other people's processes hidden from
+leaves `/sys` alone. Everything else is on: private `/tmp`, a closed device policy with one
+node let through, no network and no socket families at all, other people's processes hidden
+from
 `/proc`, module loading blocked, personality and clock and hostname frozen, no new privileges,
 no setuid or setgid files, a seccomp allow list of `@system-service` minus the groups the
 daemon never uses, native syscalls only, and `0077` as the umask.

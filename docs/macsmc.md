@@ -184,6 +184,51 @@ You pass a key, a size and a buffer of up to 32 bytes, and get success or an err
 key is the four characters packed into a `u32` in reading order, so `HI0N` is `0x4849304E`. The
 size has to be exactly the size the SMC reports for that key, or the ioctl answers `EINVAL`.
 
+The argument is a fixed struct and its layout is part of the contract:
+
+```c
+struct ioctl_smc_rw_payload {       /* 40 bytes */
+        smc_key key;                /* the four characters */
+        __u32 size;
+        __u8 buf[32];
+};
+```
+
+The size of the struct is encoded in the ioctl number, so a payload of another size is
+a command the driver does not know, and it answers `EINVAL` before it looks at the key.
+The KaiT2en `t2smc` driver registers a `/dev/smc` of its own with the same four commands,
+but with a `size_t size`, which is 48 bytes on a 64 bit machine. Match the driver you
+are talking to.
+
+`IOCTL_SMC_READ` copies the whole payload back, key, size and all 32 buffer bytes, not just the
+bytes it read, and `IOCTL_SMC_WRITE` copies the whole payload in. The argument has to be a full
+payload struct and it has to be initialized.
+
+The size is checked twice on both commands: it has to equal the size the SMC reports for the key,
+and it may not exceed `buf`. The SMC itself takes keys of up to 255 bytes (`SMC_MAX_SIZE`), so
+the 32 byte bound in the ioctl is the only thing keeping the copy inside the payload.
+
+With a 40 byte payload the two numbers are `0xC0285301` for `IOCTL_SMC_READ` and `0x40285302`
+for `IOCTL_SMC_WRITE`; with a 48 byte one they are `0xC0305301` and `0x40305302`. The revision
+of the macsmc ioctl patch that went to the mailing list in October 2026 uses `size_t size`, and
+it also rejects a list of keys owned by other drivers instead of allowing only the six below.
+The revision t2-patches carries is the 40 byte one with the six key list, and it installs
+`include/uapi/linux/macsmc.h`, which is the shortest way to see what a tree has. Check the
+header of the tree you build against, not the patch number: `EINVAL` for a key the machine has
+is the sign that the payload size disagrees.
+
+`IOCTL_SMC_GET_KEY_INFO` is where a read or a write starts: it gives the size and the flags of
+the key, and both commands have to use exactly that size. Its argument is a key and then the key
+record of the kernel header, and that record holds its size as a `__u8`, so the struct pads out to
+12 bytes and the command is `0xC00C5304`. It also says whether a key is there at all, and the two
+backends do not say it the same way. The MMIO backend answers a key the SMC has
+not with `EIO`, the port backend finishes the transaction and leaves size, type and flags zero,
+which is how the old `applesmc` driver found a missing key. Only the second way can be mistaken
+for a key, and a record with no size, no type and no flags is no key.
+
+`/dev/smc` is a device node, so a confined service has to be let through to it, see
+[the service](systemd-service.md).
+
 The ioctl accepts six keys and nothing else, because keys owned by other kernel drivers must
 not have two writers, and everything else is `EPERM`:
 

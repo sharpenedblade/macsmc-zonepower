@@ -134,9 +134,9 @@
                 RestrictRealtime = "yes";
                 RestrictSUIDSGID = "yes";
                 PrivateTmp = "yes";
-                PrivateDevices = "yes";
                 PrivateNetwork = "yes";
                 DevicePolicy = "closed";
+                DeviceAllow = [ "/dev/smc rw" ];
                 RestrictAddressFamilies = "none";
                 ProtectSystem = "strict";
                 ProtectHome = "yes";

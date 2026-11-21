@@ -40,4 +40,10 @@ pub enum Error {
     IdleCpuOpen(#[source] io::Error),
     #[error("could not write idle cpu time")]
     IdleCpuWrite(#[source] io::Error),
+    #[error("could not open smc device")]
+    SmcDeviceOpen(#[source] io::Error),
+    #[error("could not read key from smc")]
+    SmcRead(#[source] nix::Error),
+    #[error("could not write key to smc")]
+    SmcWrite(#[source] nix::Error),
 }

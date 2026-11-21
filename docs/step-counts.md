@@ -93,8 +93,10 @@ anything, leave what the SMC has", and its files answer `EINVAL` for 0 and for a
 The counts are plain SMC keys, so on the macsmc stack they go through `/dev/smc`, which is
 mode `0600`. See [macsmc](macsmc.md).
 
-- `IOCTL_SMC_GET_KEY_INFO` first. It fails if the machine does not have the key, and it gives
-  the size and the flags: bit 7 readable, bit 6 writable.
+- `IOCTL_SMC_GET_KEY_INFO` first. It gives the size and the flags: bit 7 readable, bit 6
+  writable. A key the machine has not either fails, which is what the MMIO backend does, or comes
+  back with size, type and flags all zero, which is what the port backend does. See
+  [macsmc](macsmc.md).
 - `IOCTL_SMC_WRITE` with `struct ioctl_smc_rw_payload`: the key as the four characters packed
   into a `u32` in reading order, so `HI0N` is `0x4849304E`; the size in bytes; the value in
   `buf`, which is 32 bytes at most.
