@@ -1,5 +1,9 @@
 use crate::{
-    cpu::CpuPolicy, error::Error, idle_cpu::CpuIdle, igpu::Igpu, smc_power_caps::SmcPowerCaps,
+    cpu::CpuPolicy,
+    error::Error,
+    idle_cpu::CpuIdle,
+    igpu::Igpu,
+    plimits::SmcPowerCaps,
 };
 use nonempty::NonEmpty;
 use signal_hook::consts::{SIGINT, SIGTERM};
@@ -16,7 +20,7 @@ mod cpu;
 mod error;
 mod idle_cpu;
 mod igpu;
-mod smc_power_caps;
+mod plimits;
 
 fn main() {
     let cancellation_token = Arc::new(AtomicBool::new(false));

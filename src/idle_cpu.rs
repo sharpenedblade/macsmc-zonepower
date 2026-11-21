@@ -1,4 +1,4 @@
-use crate::{error::Error, smc_power_caps::power_cap::PowerCap};
+use crate::{error::Error, plimits::power_cap::PowerCap};
 use std::{fs::File, io::Write};
 
 pub struct CpuIdle {
