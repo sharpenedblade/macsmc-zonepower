@@ -1,8 +1,13 @@
 # AGENTS.md
 
+Only edit what is directly relevant to your goal. Code should be as short and
+simple as possible. Do not add anything the user did not directly ask for. Do
+change existing identifiers for no reason. Do not rewrite user comments, docs,
+or error messages unless neccessary.
+
 Comments:
 
-- Avoid unnecesary comments.
+- Do not use comments except if absolutely necessary.
 - Comments should be short.
 - Comments should not describe what is already in the diff.
 
